@@ -48,7 +48,7 @@ var firstFiveMessage = "Here are the first %d. ";
 var classSummary = "%s is at %s with %s. ";
 
 // Only used for the card on the companion app
-var cardContentSummary = "%s at %s with %s ";
+var cardContentSummary = "%s at %s with %s\r\n";
 
 // More info text
 var haveClassesRepromt = "Give me an class name to hear more information.";
@@ -227,7 +227,7 @@ var descriptionHandlers = Alexa.CreateStateHandler(states.DESCRIPTION, {
 
         var availableClasses = new Array();
         for (var k = 0; k < relevantClasses.length; k++) {
-          if (relevantClasses[k].eventName == slotValue) {
+          if (relevantClasses[k].eventName == slotValue.toLowerCase()) {
             availableClasses.push(relevantClasses[k]);
             console.log(slotValue);
           }
