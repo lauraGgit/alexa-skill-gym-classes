@@ -15,7 +15,7 @@ var gymID = process.env.MICO_ID;
 var APP_ID = undefined;
 
 // Skills name
-var skillName = "Oh, you gym rat. ";
+var skillName = "<say-as interpret-as="interjection">Boom.</say-as> you gym rat. ";
 
 // Message when the skill is first called
 var welcomeMessage = "Alright, which day? ";
@@ -227,16 +227,14 @@ var descriptionHandlers = Alexa.CreateStateHandler(states.DESCRIPTION, {
 
         var availableClasses = new Array();
         for (var k = 0; k < relevantClasses.length; k++) {
-          if (relevantClasses[k].eventName == slotValue.toLowerCase()) {
+          if (relevantClasses[k].eventName.toLowerCase() == slotValue) {
             availableClasses.push(relevantClasses[k]);
             console.log(slotValue);
           }
         }
 
         if(availableClasses.length > 0) {
-          for(var j = 0; j < availableClasses.length; j ++){
-            output += utils.format(descriptionMessage, availableClasses[j].eventName, availableClasses[j].eventDescription);
-          }
+            output = utils.format(descriptionMessage, availableClasses[0].eventName, availableClasses[0].eventDescription);
 
           this.emit(':askWithCard', output, repromt, availableClasses[0].eventName, availableClasses[0].eventDescription);
 
