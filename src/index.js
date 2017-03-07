@@ -15,7 +15,7 @@ var gymID = process.env.MICO_ID;
 var APP_ID = undefined;
 
 // Skills name
-var skillName = "<say-as interpret-as="interjection">Boom.</say-as> you gym rat. ";
+var skillName = '<say-as interpret-as="interjection">Boom.</say-as> you gym rat. ';
 
 // Message when the skill is first called
 var welcomeMessage = "Alright, which day? ";
