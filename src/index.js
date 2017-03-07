@@ -31,7 +31,7 @@ var descriptionStateHelpMessage = "Here are some things you can say: Tell me abo
 var NoDataMessage = "Sorry there aren't any classes scheduled. Would you like to search again?";
 
 // Used to tell user skill is closing
-var shutdownMessage = "Ok see you again soon.";
+var shutdownMessage = "Ok have fun at the gym.";
 
 // Message used when only 1 class is found allowing for difference in punctuation
 var oneEventMessage = "There is 1 class ";
