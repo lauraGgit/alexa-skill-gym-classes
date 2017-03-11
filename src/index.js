@@ -160,15 +160,8 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
                                   output += utils.format(classSummary, relevantClasses[m].eventName, relevantClasses[m].eventStartTime, relevantClasses[m].instructor);
                               }
                             }
-                            // if (relevantClasses[1]) {
-                            //     output += utils.format(classSummary, "Second", relevantClasses[1].eventName, relevantClasses[1].eventStartTime, relevantClasses[1].instructor);
-                            // }
-                            //
-                            // if (relevantClasses[2]) {
-                            //     output += utils.format(classSummary, "Third", relevantClasses[2].eventName, relevantClasses[2].eventStartTime, relevantClasses[2].instructor);
-                            // }
 
-                            for (var i = 0; i < relevantClasses.length; i++) {
+                            for (var i = 0;  i < relevantClasses.length; i++) {
                                 var date = new Date(relevantClasses[i].start);
                                 cardContent += utils.format(cardContentSummary, relevantClasses[i].eventName, relevantClasses[i].eventStartTime, relevantClasses[i].instructor);
                             }
@@ -381,8 +374,11 @@ function getClassesBeweenDates(startDate, endDate, classList) {
 
     var start = new Date(startDate);
     var end = new Date(endDate);
+    var nowDate = new Date();
 
     var data = new Array();
+
+    var isToday = isTodayCheck(start, nowDate);
 
     for (var i = 0; i < classList.length; i++) {
       var classDateParts =classList[i].eventDate.split('/');
@@ -391,12 +387,37 @@ function getClassesBeweenDates(startDate, endDate, classList) {
       var classEventDate = new Date(classDateParts[2],classDateParts[0]-1,classDateParts[1]);
 
         if (start.getTime() <= classEventDate.getTime() && end.getTime() >= classEventDate.getTime()) {
+          if(isToday){
+            var classTime = parseTimeString(classList[i].eventStartTime);
+            if( classTime >= nowDate.getHours() ){
+              data.push(classList[i]);
+            }
+          } else {
             data.push(classList[i]);
+          }
         }
     }
 
     console.log("FOUND " + data.length + " classes between those times");
     return data;
+}
+
+function isTodayCheck(dateWithZeroSetHours, todaysDate){
+  // call setHours to take the time out of the comparison
+  if(dateWithZeroSetHours == todaysDate.setHours(0,0,0,0)) {
+      // Date equals today's date
+      return true;
+  }
+  return false;
+}
+
+function parseTimeString(timeString){
+  var timeInt = 0
+  if(timeString.endsWith("pm")){
+    timeInt += 12;
+  }
+  timeInt += parseInt(timeString.substr(0,2));
+  return timeInt;
 }
 
 function getWeekDates(){
