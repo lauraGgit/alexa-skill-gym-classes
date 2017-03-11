@@ -3,9 +3,13 @@ searchIntent get me classes for {date}
 searchIntent whats on {date}
 searchIntent {date}
 searchIntent for {date}
+searchIntent for {date} at {classTime}
+searchIntent classes {classTime} {date}
+searchIntent classes {classTime} on {date}
 searchIntent whats happening {date}
 searchIntent tell me whats happening {date}
 searchIntent what is happening {date}
+searchIntent what is happening {date} at {classTime}
 searchIntent what is happening on {date}
 searchIntent what classes are happening {date}
 searchIntent what classes are happening on {date}

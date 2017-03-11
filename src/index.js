@@ -109,8 +109,11 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
     'searchIntent': function () {
         // Declare variables
-        var slotValue = this.event.request.intent.slots.date.value;
-        if (slotValue != undefined)
+        var dateSlotValue = this.event.request.intent.slots.date.value;
+        if(this.event.request.intent.slots.classTime != undefined){
+          var timeSlotValue = this.event.request.intent.slots.classTime.value;
+        }
+        if (dateSlotValue != undefined)
         {
             var parent = this;
             weekDates = getWeekDates();
@@ -118,7 +121,7 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             request
             .get('https://mico.myiclubonline.com/iclub/scheduling/classSchedule.htm?club='+gymID+'&lowDate='+weekDates[0]+'&highDate='+weekDates[1])
             .end(function(err, res){
-              console.log("Number of classes retrieved" + res.body.length);
+              console.log("Number of classes retrieved " + res.body.length);
 
               classList = res.body;
               for(var j = 0; j < classList.length; j ++){
@@ -128,17 +131,21 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
                 // Check we have data
                 if (classList.length > 0) {
                     // Read slot data and parse out a usable date
-                    var classDate = getDateFromSlot(slotValue);
+                    var classDate = getDateFromSlot(dateSlotValue);
                     // Check we have both a start and end date
                     if (classDate.startDate && classDate.endDate) {
                         // initiate a new array, and this time fill it with classes that fit between the two dates
                         relevantClasses = getClassesBeweenDates(classDate.startDate, classDate.endDate, classList);
 
+                        if (timeSlotValue != undefined)  {
+                          relevantClasses = filterTime(timeSlotValue, relevantClasses);
+                        }
+
                         if (relevantClasses.length > 0) {
                             // change state to description
                             parent.handler.state = states.DESCRIPTION;
 
-                            var relevantClassResponse = buildRelevantClassResponse(relevantClasses, slotValue);
+                            var relevantClassResponse = buildRelevantClassResponse(relevantClasses, dateSlotValue);
                             alexa.emit(':askWithCard', relevantClassResponse.output, haveClassesRepromt, cardTitle, relevantClassResponse.cardContent);
                         } else {
                             output = NoDataMessage;
@@ -184,20 +191,26 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 // Create a new handler object for description state
 var descriptionHandlers = Alexa.CreateStateHandler(states.DESCRIPTION, {
     'searchIntent': function () {
-      var slotValue = this.event.request.intent.slots.date.value;
+      var dateSlotValue = this.event.request.intent.slots.date.value;
+      if(this.event.request.intent.slots.classTime != undefined){
+        var timeSlotValue = this.event.request.intent.slots.classTime.value;
+      }
 
       if (classList.length > 0) {
           // Read slot data and parse out a usable date
-          var classDate = getDateFromSlot(slotValue);
+          var classDate = getDateFromSlot(dateSlotValue);
           // Check we have both a start and end date
           if (classDate.startDate && classDate.endDate) {
               // initiate a new array, and this time fill it with classes that fit between the two dates
               relevantClasses = getClassesBeweenDates(classDate.startDate, classDate.endDate, classList);
 
+              if (timeSlotValue != undefined)  {
+                relevantClasses = filterTime(timeSlotValue, relevantClasses);
+              }
               if (relevantClasses.length > 0) {
                   // change state to description
 
-                  var relevantClassResponse = buildRelevantClassResponse(relevantClasses, slotValue);
+                  var relevantClassResponse = buildRelevantClassResponse(relevantClasses, dateSlotValue);
                   alexa.emit(':askWithCard', relevantClassResponse.output, haveClassesRepromt, cardTitle, relevantClassResponse.cardContent);
               } else {
                   output = NoDataMessage;
@@ -229,7 +242,6 @@ var descriptionHandlers = Alexa.CreateStateHandler(states.DESCRIPTION, {
 
         var repromt = " Would you like to hear about another class?";
         var slotValue = this.event.request.intent.slots.className.value;
-        // var slotValue = "Cycle";
 
         var availableClasses = new Array();
         for (var k = 0; k < relevantClasses.length; k++) {
@@ -401,8 +413,8 @@ function getClassesBeweenDates(startDate, endDate, classList) {
 
         if (start.getTime() <= classEventDate.getTime() && end.getTime() >= classEventDate.getTime()) {
           if(isToday){
-            var classTime = parseTimeString(classList[i].eventStartTime);
-            if( classTime >= nowDate.getHours() ){
+            var classStartsLater = isAfter(classList[i].eventStartTime, nowDate);
+            if( classStartsLater ){
               data.push(classList[i]);
             }
           } else {
@@ -425,12 +437,24 @@ function isTodayCheck(dateWithZeroSetHours, todaysDate){
 }
 
 function parseTimeString(timeString){
-  var timeInt = 0
+  var timeInt = 0;
   if(timeString.endsWith("pm")){
     timeInt += 12;
   }
-  timeInt += parseInt(timeString.substr(0,2));
+  var dateInt = parseInt(timeString.substr(0,2));
+  if(dateInt !== 12){ // 12 am will then be 0, 12 pm will be 12 from above.
+    timeInt += dateInt;
+  }
+
   return timeInt;
+}
+
+function isAfter(dateText, comparisonDateObject){
+  var dateHours = parseTimeString(dateText);
+  if(dateHours >= comparisonDateObject.getHours()){
+    return true;
+  }
+  return false;
 }
 
 function getWeekDates(){
@@ -495,4 +519,20 @@ function buildRelevantClassResponse(relevantClasses, slotValue){
 
   output += classNumberMoreInfoText;
   return {cardContent: cardContent, output: output};
+}
+
+function filterTime(timeToStart, classesToFilter){
+  // Filter by hour
+  var requestHour = parseInt(timeToStart.substr(0,2));
+  var requestMinute = parseInt(timeToStart.substr(3,2));
+  classesToFilter = classesToFilter.filter(function(cls){
+    return parseTimeString(cls.eventStartTime) >= requestHour;
+  });
+
+  // Filter by minute
+  classesToFilter = classesToFilter.filter(function(cls){
+    return parseInt(cls.eventStartTime.substr(3,2)) >= requestMinute;
+  });
+
+  return classesToFilter;
 }
