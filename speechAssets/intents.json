@@ -6,6 +6,7 @@
                 { "intent": "AMAZON.CancelIntent", "slots": [] },
                 { "intent": "AMAZON.YesIntent", "slots": [] },
                 { "intent": "AMAZON.NoIntent", "slots": [] },
+                { "intent": "nextIntent", "slots": []},
                 { "intent": "searchIntent", "slots": [{ "name": "date", "type": "AMAZON.DATE" }] },
                 { "intent": "classIntent", "slots": [{ "name": "className", "type": "LIST_OF_CLASS_NAMES" }
               ]

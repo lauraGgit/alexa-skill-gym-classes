@@ -11,6 +11,14 @@ searchIntent what classes are happening {date}
 searchIntent what classes are happening on {date}
 searchIntent what classes are there on {date}
 
+nextIntent what are the next classes available classes
+nextIntent next classes
+nextIntent what is next
+nextIntent what's next
+nextIntent whats next
+nextIntent tell me the next classes
+nextIntent tell me the next available classes
+
 classIntent tell me about {className} class
 classIntent whats class {className}
 classIntent class {className}

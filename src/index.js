@@ -62,10 +62,7 @@ var classOutOfRange = "Sorry. I didn't recognize the class name.";
 // Used when an class is asked for
 var descriptionMessage = "Description for %s: %s";
 
-// Used when an class is asked for
-var killSkillMessage = "Ok, great, see you next time.";
-
-var classNumberMoreInfoText = "You can say the class name for more information.";
+var classNumberMoreInfoText = "You can search another date, hear more classes, or ask to hear more about a specific class.";
 
 // used for title on companion app
 var cardTitle = "Classes";
@@ -75,6 +72,9 @@ var output = "";
 
 // stores classes that are found to be in our date range
 var relevantClasses = new Array();
+var classList = new Array();
+var maxNumberToReadOut = 5;
+var nextIntentIndex;
 
 // Adding session handlers
 var newSessionHandlers = {
@@ -109,7 +109,6 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
     'searchIntent': function () {
         // Declare variables
-        var classList = new Array();
         var slotValue = this.event.request.intent.slots.date.value;
         if (slotValue != undefined)
         {
@@ -121,7 +120,7 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
             .end(function(err, res){
               console.log("Number of classes retrieved" + res.body.length);
 
-              var classList = res.body;
+              classList = res.body;
               for(var j = 0; j < classList.length; j ++){
                 var instructorNames = classList[j].employeeName.split(' ');
                 classList[j].instructor = instructorNames[0];
@@ -134,46 +133,18 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
                     if (classDate.startDate && classDate.endDate) {
                         // initiate a new array, and this time fill it with classes that fit between the two dates
                         relevantClasses = getClassesBeweenDates(classDate.startDate, classDate.endDate, classList);
-                        // console.log(relevantClasses);
 
                         if (relevantClasses.length > 0) {
                             // change state to description
                             parent.handler.state = states.DESCRIPTION;
 
-                            // Create output for both Alexa and the content card
-                            var cardContent = "";
-                            output = oneEventMessage;
-                            if (relevantClasses.length > 1) {
-                                output = utils.format(multipleEventMessage, relevantClasses.length);
-                            }
-
-                            output += utils.format(scheduledEventMessage, slotValue);
-
-                            var numberToReadOut = relevantClasses.length > 5 ? 5 : relevantClasses.length;
-
-                            if (relevantClasses.length > 1) {
-                                output += utils.format(firstFiveMessage, numberToReadOut);
-                            }
-
-                            for(var m = 0; m < numberToReadOut; m++){
-                              if (relevantClasses[m] != null) {
-                                  output += utils.format(classSummary, relevantClasses[m].eventName, relevantClasses[m].eventStartTime, relevantClasses[m].instructor);
-                              }
-                            }
-
-                            for (var i = 0;  i < relevantClasses.length; i++) {
-                                var date = new Date(relevantClasses[i].start);
-                                cardContent += utils.format(cardContentSummary, relevantClasses[i].eventName, relevantClasses[i].eventStartTime, relevantClasses[i].instructor);
-                            }
-
-                            output += classNumberMoreInfoText;
-                            alexa.emit(':askWithCard', output, haveClassesRepromt, cardTitle, cardContent);
+                            var relevantClassResponse = buildRelevantClassResponse(relevantClasses, slotValue);
+                            alexa.emit(':askWithCard', relevantClassResponse.output, haveClassesRepromt, cardTitle, relevantClassResponse.cardContent);
                         } else {
                             output = NoDataMessage;
                             alexa.emit(':ask', output, output);
                         }
-                    }
-                    else {
+                    } else {
                         output = NoDataMessage;
                         alexa.emit(':ask', output, output);
                     }
@@ -194,11 +165,11 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
     },
 
     'AMAZON.StopIntent': function () {
-        this.emit(':tell', killSkillMessage);
+        this.emit(':tell', shutdownMessage);
     },
 
     'AMAZON.CancelIntent': function () {
-        this.emit(':tell', killSkillMessage);
+        this.emit(':tell', shutdownMessage);
     },
 
     'SessionEndedRequest': function () {
@@ -212,6 +183,48 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
 
 // Create a new handler object for description state
 var descriptionHandlers = Alexa.CreateStateHandler(states.DESCRIPTION, {
+    'searchIntent': function () {
+      var slotValue = this.event.request.intent.slots.date.value;
+
+      if (classList.length > 0) {
+          // Read slot data and parse out a usable date
+          var classDate = getDateFromSlot(slotValue);
+          // Check we have both a start and end date
+          if (classDate.startDate && classDate.endDate) {
+              // initiate a new array, and this time fill it with classes that fit between the two dates
+              relevantClasses = getClassesBeweenDates(classDate.startDate, classDate.endDate, classList);
+
+              if (relevantClasses.length > 0) {
+                  // change state to description
+
+                  var relevantClassResponse = buildRelevantClassResponse(relevantClasses, slotValue);
+                  alexa.emit(':askWithCard', relevantClassResponse.output, haveClassesRepromt, cardTitle, relevantClassResponse.cardContent);
+              } else {
+                  output = NoDataMessage;
+                  alexa.emit(':ask', output, output);
+              }
+          } else {
+              output = NoDataMessage;
+              alexa.emit(':ask', output, output);
+          }
+      } else {
+          output = NoDataMessage;
+          alexa.emit(':ask', output, output);
+      }
+    },
+    'nextIntent': function () {
+      var output = "";
+      var howManyMoretoRead = relevantClasses.length > (maxNumberToReadOut + nextIntentIndex) ? (maxNumberToReadOut + nextIntentIndex) : relevantClasses.length;
+      for(var m = nextIntentIndex; m < howManyMoretoRead; m++){
+        if (relevantClasses[m] != null) {
+            output += utils.format(classSummary, relevantClasses[m].eventName, relevantClasses[m].eventStartTime, relevantClasses[m].instructor);
+        }
+      }
+     nextIntentIndex = howManyMoretoRead; // update the next function
+
+      output += classNumberMoreInfoText;
+      alexa.emit(':ask', output, output);
+    },
     'classIntent': function () {
 
         var repromt = " Would you like to hear about another class?";
@@ -241,11 +254,11 @@ var descriptionHandlers = Alexa.CreateStateHandler(states.DESCRIPTION, {
     },
 
     'AMAZON.StopIntent': function () {
-        this.emit(':tell', killSkillMessage);
+        this.emit(':tell', shutdownMessage);
     },
 
     'AMAZON.CancelIntent': function () {
-        this.emit(':tell', killSkillMessage);
+        this.emit(':tell', shutdownMessage);
     },
 
     'AMAZON.NoIntent': function () {
@@ -450,4 +463,36 @@ function urlStringifyDate(dateObj){
   }
   return month+'%2F'+dayOfMonth+'%2F'+dateObj.getFullYear();
 
+}
+
+function buildRelevantClassResponse(relevantClasses, slotValue){
+  // Create output for both Alexa and the content card
+  var cardContent = "";
+  output = oneEventMessage;
+  if (relevantClasses.length > 1) {
+      output = utils.format(multipleEventMessage, relevantClasses.length);
+  }
+
+  output += utils.format(scheduledEventMessage, slotValue);
+
+  var numberToReadOut = relevantClasses.length > maxNumberToReadOut ? maxNumberToReadOut : relevantClasses.length;
+  nextIntentIndex = numberToReadOut;
+
+  if (relevantClasses.length > 1) {
+      output += utils.format(firstFiveMessage, numberToReadOut);
+  }
+
+  for(var m = 0; m < numberToReadOut; m++){
+    if (relevantClasses[m] != null) {
+        output += utils.format(classSummary, relevantClasses[m].eventName, relevantClasses[m].eventStartTime, relevantClasses[m].instructor);
+    }
+  }
+
+  for (var i = 0;  i < relevantClasses.length; i++) {
+      var date = new Date(relevantClasses[i].start);
+      cardContent += utils.format(cardContentSummary, relevantClasses[i].eventName, relevantClasses[i].eventStartTime, relevantClasses[i].instructor);
+  }
+
+  output += classNumberMoreInfoText;
+  return {cardContent: cardContent, output: output};
 }
