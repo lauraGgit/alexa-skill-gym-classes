@@ -4,7 +4,7 @@ var utils = require('util');
 
 var states = {
     SEARCHMODE: '_SEARCHMODE',
-    DESCRIPTION: '_DESKMODE',
+    DESCRIPTION: '_DESKMODE'
 };
 // local variable holding reference to the Alexa SDK object
 var alexa;
@@ -21,7 +21,7 @@ var skillName = '<say-as interpret-as="interjection">Boom.</say-as> you gym rat.
 var welcomeMessage = "Alright, which day? ";
 
 // Message for help intent
-var HelpMessage = "Try saying: Tomorrow? What classes are there on this Tuesday?";
+var helpMessage = "Try saying: Tomorrow? What classes are there on this Tuesday?";
 
 var UnhandledMessage = "Looks like I didn't quite get that. ";
 
@@ -51,7 +51,7 @@ var classSummary = "%s is at %s with %s. ";
 var cardContentSummary = "%s at %s with %s\r\n";
 
 // More info text
-var haveClassesRepromt = "Give me an class name to hear more information.";
+var haveClassesRepromt = "Ask for another date or give me an class name to hear more information.";
 
 // Error if a date is out of range
 var dateOutOfRange = "Date is out of range please choose another date";
@@ -88,7 +88,7 @@ var newSessionHandlers = {
         this.emitWithState("searchIntent");
     },
     'Unhandled': function () {
-        this.emit(':ask', HelpMessage, HelpMessage);
+        this.emit(':ask', unhandledMessage, unhandledMessage);
     },
 };
 
@@ -104,7 +104,7 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
     },
 
     'AMAZON.RepeatIntent': function () {
-        this.emit(':ask', output, HelpMessage);
+        this.emit(':ask', output, helpMessage);
     },
 
     'searchIntent': function () {
@@ -189,7 +189,7 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
     },
 
     'AMAZON.HelpIntent': function () {
-        output = HelpMessage;
+        output = helpMessage;
         this.emit(':ask', output, output);
     },
 
@@ -206,7 +206,7 @@ var startSearchHandlers = Alexa.CreateStateHandler(states.SEARCHMODE, {
     },
 
     'Unhandled': function () {
-        this.emit(':ask', HelpMessage, HelpMessage);
+        this.emit(':ask', helpMessage, helpMessage);
     }
 });
 
@@ -262,7 +262,7 @@ var descriptionHandlers = Alexa.CreateStateHandler(states.DESCRIPTION, {
     },
 
     'Unhandled': function () {
-        this.emit(':ask', HelpMessage, HelpMessage);
+        this.emit(':ask', helpMessage, helpMessage);
     }
 });
 
